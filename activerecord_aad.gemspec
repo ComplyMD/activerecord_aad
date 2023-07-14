@@ -4,7 +4,7 @@ $LOAD_PATH << File.join(File.dirname(__FILE__), 'lib')
 
 Gem::Specification.new do |s|
   s.name        = 'activerecord_aad'
-  s.version     = '0.2.1'
+  s.version     = '0.3.0'
   s.authors     = ['Taylor Yelverton']
   s.email       = 'rubygems@yelvert.io'
   s.homepage    = 'https://github.com/ComplyMD/activerecord_aad'
