@@ -7,7 +7,7 @@ module Azure
       module HashConfig
 
         def configuration_hash
-          hash = super.dup
+          hash = super.dup.with_indifferent_access
           if hash[:azure_managed_identity].present?
             @managed_identity_manager ||= ManagedIdentityManager.new(hash)
             @managed_identity_manager.apply
@@ -25,15 +25,15 @@ module Azure
 
         def initialize(conf)
           raise "ActiveRecordAAD: invalid config: `#{conf}`" unless conf.is_a?(Hash)
-          @config = conf.with_indifferent_access
+          @config = conf
           @client_id = config[:azure_managed_identity]
           @url = URL
           @url += "&client_id=#{@client_id}" if @client_id.present?
         end
 
-        def apply(hash)
-          hash[:password] = access_token
-          hash[:enable_cleartext_plugin] = true if hash[:adapter] == 'mysql2'
+        def apply
+          config[:password] = access_token
+          config[:enable_cleartext_plugin] = true if config[:adapter] == 'mysql2'
         end
 
         def access_token
