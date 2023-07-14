@@ -9,10 +9,10 @@ module Azure
         def configuration_hash
           hash = super.dup.with_indifferent_access
           if hash[:azure_managed_identity].present?
-            @managed_identity_manager ||= ManagedIdentityManager.new(hash)
-            @managed_identity_manager.apply
+            @managed_identity_manager ||= ManagedIdentityManager.new(hash[:azure_managed_identity])
+            @managed_identity_manager.apply hash
           end
-          hash.symbolize_keys!.freeze
+          hash.freeze
           hash
         end
 
@@ -21,17 +21,15 @@ module Azure
       class ManagedIdentityManager
         URL = 'http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https%3A%2F%2Fossrdbms-aad.database.windows.net'
 
-        attr_reader :config, :url
+        attr_reader :client_id, :url
 
-        def initialize(conf)
-          raise "ActiveRecordAAD: invalid config: `#{conf}`" unless conf.is_a?(Hash)
-          @config = conf
-          @client_id = config[:azure_managed_identity]
+        def initialize(cid)
+          @client_id = cid
           @url = URL
-          @url += "&client_id=#{@client_id}" if @client_id.present?
+          @url += "&client_id=#{@client_id}"
         end
 
-        def apply
+        def apply(config)
           config[:password] = access_token
           config[:enable_cleartext_plugin] = true if config[:adapter] == 'mysql2'
         end
