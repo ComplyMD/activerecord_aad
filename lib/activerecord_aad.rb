@@ -8,12 +8,11 @@ module Azure
 
         def configuration_hash
           hash = super.dup
-          if hash.key?(:azure_managed_identity)
-            @managed_identity_manager ||= ManagedIdentityManager.new(hash[:azure_managed_identity])
-            @managed_identity_manager.apply(hash)
+          if hash[:azure_managed_identity].present?
+            @managed_identity_manager ||= ManagedIdentityManager.new(hash)
+            @managed_identity_manager.apply
           end
           hash.symbolize_keys!.freeze
-          puts hash
           hash
         end
 
@@ -27,14 +26,14 @@ module Azure
         def initialize(conf)
           raise "ActiveRecordAAD: invalid config: `#{conf}`" unless conf.is_a?(Hash)
           @config = conf.with_indifferent_access
-          raise 'ActiveRecordAAD: missing client_id' unless config[:client_id].present?
-          @client_id = config[:client_id]
+          @client_id = config[:azure_managed_identity]
           @url = URL
           @url += "&client_id=#{@client_id}" if @client_id.present?
         end
 
         def apply(hash)
-          hash.merge!(password: access_token, enable_cleartext_plugin: true)
+          hash[:password] = access_token
+          hash[:enable_cleartext_plugin] = true if hash[:adapter] == 'mysql2'
         end
 
         def access_token
