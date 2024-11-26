@@ -4,8 +4,8 @@ $LOAD_PATH << File.join(File.dirname(__FILE__), 'lib')
 
 Gem::Specification.new do |s|
   s.name        = 'activerecord_aad'
-  s.version     = '0.3.0'
-  s.authors     = ['Taylor Yelverton']
+  s.version     = '0.4.0'
+  s.authors     = ['Taylor Yelverton', 'Patrick Connelly']
   s.email       = 'rubygems@yelvert.io'
   s.homepage    = 'https://github.com/ComplyMD/activerecord_aad'
   s.summary     = ''
@@ -24,7 +24,7 @@ Gem::Specification.new do |s|
 
   s.require_paths = %w[ lib ]
 
-  s.required_ruby_version = '>= 2.7.0'
+  s.required_ruby_version = '>= 3.0.6'
 
   s.add_dependency('activerecord', '>= 6.0.0', '< 8.0.0')
   s.add_dependency('httparty', '~> 0.21.0')
