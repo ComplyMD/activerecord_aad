@@ -216,6 +216,14 @@ GEM
     rspec-mocks (3.13.2)
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.13.0)
+    rspec-rails (7.1.0)
+      actionpack (>= 7.0)
+      activesupport (>= 7.0)
+      railties (>= 7.0)
+      rspec-core (~> 3.13)
+      rspec-expectations (~> 3.13)
+      rspec-mocks (~> 3.13)
+      rspec-support (~> 3.13)
     rspec-simplecov (0.2.2)
     rspec-support (3.13.1)
     rubocop (1.52.1)
@@ -267,6 +275,7 @@ DEPENDENCIES
   pry-remote
   rails (~> 7.1.0)
   rspec
+  rspec-rails
   rspec-simplecov
   rubocop
   rubocop-rspec

@@ -28,4 +28,6 @@ Gem::Specification.new do |s|
 
   s.add_dependency('activerecord', '>= 6.0.0', '< 8.0.0')
   s.add_dependency('httparty', '~> 0.21.0')
+
+  s.add_development_dependency "rspec-rails"
 end
