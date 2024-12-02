@@ -14,6 +14,11 @@ module ActiveRecordAAD
       @properties = default_properties
       @properties[:client_id] = props if props.is_a?(String)
       @properties = @properties.merge(props.symbolize_keys) if props.is_a?(Hash)
+      @logger = Rails.logger.tagged('ActiveRecordAAD')
+    end
+
+    def logger(*tags)
+      @logger.tagged(*tags)
     end
 
     # Constructs the URL for fetching the OAuth2 token.
@@ -25,7 +30,10 @@ module ActiveRecordAAD
 
     # Returns cached token or fetches a new one
     def access_token
+      logger('access_token').info('Fetching token')
+
       if token_expiring?
+        logger('access_token').info('Token expired')
         @access_token, access_token_expires_on = fetch_access_token
 
         # TODO: validate token
@@ -44,6 +52,7 @@ module ActiveRecordAAD
     # This method duplicates the existing database configuration hash,
     # merges it with a new password (the access token), and freezes the new configuration.
     def apply(db_config)
+      logger('apply').info('Applying token')
       new_config = db_config.configuration_hash.dup.merge(password: access_token).freeze
       db_config.instance_variable_set('@configuration_hash', new_config)
     end
@@ -92,14 +101,18 @@ module ActiveRecordAAD
 
     # Fetches the access token from the specified URL.
     def fetch_access_token
+      logger('fetch_access_token').info('Fetching token')
+
       begin
         access_token_response = HTTParty.get(url, headers: { 'Metadata' => 'true' }, timeout: @properties[:timeout])
       rescue StandardError => e
+        logger('fetch_access_token').info('Error fetching token')
         raise "ActiveRecordAAD: unable to get access token: `#{e.message}`"
       end
 
       unless access_token_response.success?
-        raise "ActiveRecordAAD: unable to get access token: `#{access_token_response.code} - #{access_token_response.message}`"
+        logger('fetch_access_token').info('Unsuccessful response')
+        raise "ActiveRecordAAD: unable to get access token: `#{access_token_response.code} - #{access_token_response.message} - #{access_token_response.body}`"
       end
 
       access_token_response.values_at 'access_token', 'expires_on'
