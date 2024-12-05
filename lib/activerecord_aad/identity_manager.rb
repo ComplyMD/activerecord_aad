@@ -34,14 +34,12 @@ module ActiveRecordAAD
 
       if token_expiring?
         logger('access_token').info('Token expired')
-        @access_token, access_token_expires_on = fetch_access_token
+        @access_token = fetch_token
 
         # TODO: validate token
-        if access_token_expires_on.nil?
-          header, payload, signature = @access_token.split('.')
-          decoded_payload = JSON.parse(Base64.decode64(payload))
-          access_token_expires_on = decoded_payload['exp']
-        end
+        header, payload, signature = @access_token.split('.')
+        decoded_payload = JSON.parse(Base64.decode64(payload))
+        access_token_expires_on = decoded_payload['exp']
 
         @access_token_expires_on = Time.at(access_token_expires_on.to_i)
         @access_token_fetched_at = Time.now
@@ -101,44 +99,48 @@ module ActiveRecordAAD
       Time.now >= fetch_at
     end
 
+    def fetch_token_http
+      response = HTTParty.get(@properties[:endpoint], query: {
+        api_version: @properties[:api_version],
+        resource: @properties[:resource],
+        client_id: @properties[:client_id]
+      }, headers: {
+        'Metadata' => 'true'
+      }, timeout: @properties[:timeout])
+
+      unless response.success?
+        logger('fetch_token').info('Unsuccessful response')
+        raise "ActiveRecordAAD: unsuccessful access token request: `#{response.code} - #{response.message} - #{response.body}`"
+      end
+
+      token = response.parsed_response
+    end
+
+    def fetch_token_python
+      command = File.read(File.expand_path('../bin/get_token.py', __dir__))
+      token = `python3 -c "#{command}"`.strip
+    end
+
+
     # Fetches the access token from the specified URL.
-    def fetch_access_token
-      logger('fetch_access_token').info('Fetching token')
+    def fetch_token
+      logger('fetch_token').info('Fetching token')
       token = nil
-      expires_on = nil
 
       begin
-        # raise 'Error!'
-        # response = HTTParty.get(@properties[:endpoint], query: {
-        #   api_version: @properties[:api_version],
-        #   resource: @properties[:resource],
-        #   client_id: @properties[:client_id]
-        # }, headers: {
-        #   'Metadata' => 'true'
-        # }, timeout: @properties[:timeout])
-
-        # token = response.parsed_response
-
-        response = HTTParty.get(url, headers: { 'Metadata' => 'true' }, timeout: @properties[:timeout])
-
-        unless response.success?
-          logger('fetch_access_token').info('Unsuccessful response')
-          raise "ActiveRecordAAD: unsuccessful access token request: `#{access_token_response.code} - #{access_token_response.message} - #{access_token_response.body}`"
-        end
-
-        token, expires_on = response.values_at 'access_token', 'expires_on'
+        raise 'Error!'
+        token = fetch_token_http
       rescue StandardError => http_error
-        logger('fetch_access_token').info("ActiveRecordAAD: error getting access token: `#{http_error.message}`")
+        logger('fetch_token').info("ActiveRecordAAD: error getting access token: `#{http_error.message}`")
 
         begin
-          command = "python3 bin/get_token.py #{@properties[:client_id]}"
-          token = `#{command}`.strip
+          token = fetch_token_python
         rescue StandardError => python_error
-          logger('fetch_access_token').info("ActiveRecordAAD: unable to get access token: `#{python_error.message}`")
+          logger('fetch_token').info("ActiveRecordAAD: unable to get access token: `#{python_error.message}`")
         end
       end
 
-      return token, expires_on
+      token
     end
   end
 end
