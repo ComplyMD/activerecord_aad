@@ -128,7 +128,6 @@ module ActiveRecordAAD
       token = nil
 
       begin
-        raise 'Error!'
         token = fetch_token_http
       rescue StandardError => http_error
         logger('fetch_token').info("ActiveRecordAAD: error getting access token: `#{http_error.message}`")
