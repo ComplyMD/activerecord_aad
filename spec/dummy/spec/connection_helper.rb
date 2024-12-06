@@ -13,7 +13,8 @@ def run_with_connection(overrides={azure_managed_identity: {client_id: '1234-234
 end
 
 def dummy_token(header: {}, payload: {}, signature: 'signature')
-  header = { alg: 'HS256', typ: 'JWT' }.merge(header)
-  payload = { exp: Time.now.to_i + 60.minutes}.merge(payload)
+  header.reverse_merge!({ alg: 'HS256', typ: 'JWT' })
+  payload.reverse_merge!({ exp: Time.now.to_i + 60.minutes})
+
   dummy_token = "#{Base64.urlsafe_encode64(header.to_json)}.#{Base64.urlsafe_encode64(payload.to_json)}.#{Base64.urlsafe_encode64(signature)}"
 end

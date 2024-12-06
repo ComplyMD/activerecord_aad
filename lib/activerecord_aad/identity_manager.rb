@@ -53,7 +53,7 @@ module ActiveRecordAAD
     # merges it with a new password (the access token), and freezes the new configuration.
     def apply(db_config)
       logger('apply').info('Applying token')
-      new_config = db_config.configuration_hash.dup.merge(password: access_token).freeze
+      new_config = db_config.configuration_hash.dup.merge(password: access_token, enable_cleartext_plugin: @properties[:enable_cleartext_plugin]).freeze
       db_config.instance_variable_set('@configuration_hash', new_config)
     end
 
@@ -74,7 +74,8 @@ module ActiveRecordAAD
         api_version: API_VERSION,
         resource: RESOURCE,
         fetch_token: -300,
-        timeout: 10
+        timeout: 10,
+        enable_cleartext_plugin: true
       }
     end
 
