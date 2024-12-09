@@ -34,15 +34,19 @@ module ActiveRecordAAD
 
       if token_expiring?
         logger('access_token').info('Token expired')
-        @access_token = fetch_token
+        @access_token, access_token_expires_on = fetch_token
 
         # TODO: validate token
-        header, payload, signature = @access_token.split('.')
-        decoded_payload = JSON.parse(Base64.decode64(payload))
-        access_token_expires_on = decoded_payload['exp']
+        if access_token_expires_on.nil?
+          header, payload, signature = @access_token.split('.')
+          decoded_payload = JSON.parse(Base64.decode64(payload))
+          access_token_expires_on = decoded_payload['exp']
+        end
 
         @access_token_expires_on = Time.at(access_token_expires_on.to_i)
         @access_token_fetched_at = Time.now
+
+        raise "Invalid expires_on value: #{@access_token_expires_on}" unless @access_token_expires_on > Time.now
       end
 
       @access_token
@@ -118,8 +122,9 @@ module ActiveRecordAAD
     end
 
     def fetch_token_python
-      command = File.read(File.expand_path('../bin/get_token.py', __dir__))
-      token = `python3 -c "#{command}"`.strip
+      command = File.read(File.expand_path('../bin/get_token_info.py', __dir__))
+      response = JSON.parse `python3 -c "#{command}" #{@properties[:client_id]}`.strip
+      token, expires_on = response.values_at('token', 'expires_on')
     end
 
 
@@ -127,6 +132,7 @@ module ActiveRecordAAD
     def fetch_token
       logger('fetch_token').info('Start')
       token = nil
+      expires_on = nil
 
       begin
         token = fetch_token_http
@@ -134,15 +140,15 @@ module ActiveRecordAAD
         logger('fetch_token').info("HTTP: error getting access token: `#{http_error.message}`")
 
         begin
-          token = fetch_token_python
+          token, expires_on = fetch_token_python
         rescue StandardError => python_error
           logger('fetch_token').info("Python: error getting access token: `#{python_error.message}`")
         end
       end
 
-      logger('fetch_token').info("Fetched token: `#{token[0..5]}...REDACTED...#{token[-5..-1]}`")
+      logger('fetch_token').info("Fetched token: `#{token[0..5]}...REDACTED...#{token[-5..-1]}`. Expires on: #{expires_on}")
 
-      token
+      return token, expires_on
     end
   end
 end
