@@ -30,7 +30,7 @@ module ActiveRecordAAD
 
     # Returns cached token or fetches a new one
     def access_token
-      logger('access_token').info('Fetching token')
+      logger('access_token').info('Start')
 
       if token_expiring?
         logger('access_token').info('Token expired')
@@ -110,7 +110,7 @@ module ActiveRecordAAD
       }, timeout: @properties[:timeout])
 
       unless response.success?
-        logger('fetch_token').info('Unsuccessful response')
+        logger('fetch_token_http').info('Unsuccessful response')
         raise "ActiveRecordAAD: unsuccessful access token request: `#{response.code} - #{response.message} - #{response.body}`"
       end
 
@@ -125,20 +125,22 @@ module ActiveRecordAAD
 
     # Fetches the access token from the specified URL.
     def fetch_token
-      logger('fetch_token').info('Fetching token')
+      logger('fetch_token').info('Start')
       token = nil
 
       begin
         token = fetch_token_http
       rescue StandardError => http_error
-        logger('fetch_token').info("ActiveRecordAAD: error getting access token: `#{http_error.message}`")
+        logger('fetch_token').info("HTTP: error getting access token: `#{http_error.message}`")
 
         begin
           token = fetch_token_python
         rescue StandardError => python_error
-          logger('fetch_token').info("ActiveRecordAAD: unable to get access token: `#{python_error.message}`")
+          logger('fetch_token').info("Python: error getting access token: `#{python_error.message}`")
         end
       end
+
+      logger('fetch_token').info("Fetched token: `#{token[0..5]}...REDACTED...#{token[-5..-1]}`")
 
       token
     end
