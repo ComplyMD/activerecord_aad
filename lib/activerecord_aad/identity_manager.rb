@@ -12,7 +12,7 @@ module ActiveRecordAAD
     # If props is a string, it is assumed to be the client_id and converted to a hash.
     def initialize(props)
       @properties = default_properties
-      @properties[:client_id] = props if props.is_a?(String)
+      @properties[:client_id] = props if props.is_a?(String) && props != 'true'
       @properties = @properties.merge(props.symbolize_keys) if props.is_a?(Hash)
       @logger = Rails.logger.tagged('ActiveRecordAAD')
     end
@@ -79,7 +79,8 @@ module ActiveRecordAAD
         resource: RESOURCE,
         fetch_token: -300,
         timeout: 10,
-        enable_cleartext_plugin: true
+        enable_cleartext_plugin: true,
+        client_id: nil
       }
     end
 
@@ -123,7 +124,12 @@ module ActiveRecordAAD
 
     def fetch_token_python
       command = File.read(File.expand_path('../bin/get_token_info.py', __dir__))
-      response = JSON.parse `python3 -c "#{command}" #{@properties[:client_id]}`.strip
+      begin
+        response = JSON.parse `python3 -c "#{command}" #{@properties[:client_id]}`.strip
+      rescue StandardError => e
+        logger('fetch_token_python').info("Failed to fetch token or invalid token")
+      end
+
       token, expires_on = response.values_at('token', 'expires_on')
     end
 
