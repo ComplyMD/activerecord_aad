@@ -123,9 +123,8 @@ module ActiveRecordAAD
     end
 
     def fetch_token_python
-      command = File.read(File.expand_path('../bin/get_token_info.py', __dir__))
       begin
-        response = JSON.parse `python3 -c "#{command}" #{@properties[:client_id]}`.strip
+        response = JSON.parse `python3 #{File.expand_path('../bin/get_token_info.py', __dir__)} #{@properties[:client_id]}`.strip
       rescue StandardError => e
         logger('fetch_token_python').info("Failed to fetch token or invalid token")
       end
