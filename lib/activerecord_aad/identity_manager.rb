@@ -11,9 +11,7 @@ module ActiveRecordAAD
 
     # If props is a string, it is assumed to be the client_id and converted to a hash.
     def initialize(props)
-      @properties = default_properties
-      @properties[:client_id] = props if props.is_a?(String) && props != 'true'
-      @properties = @properties.merge(props.symbolize_keys) if props.is_a?(Hash)
+      @properties = default_properties.merge(props.symbolize_keys)
       @logger = Rails.logger.tagged('ActiveRecordAAD')
     end
 
@@ -34,19 +32,7 @@ module ActiveRecordAAD
 
       if token_expiring?
         logger('access_token').info('Token expired')
-        @access_token, access_token_expires_on = fetch_token
-
-        # TODO: validate token
-        if access_token_expires_on.nil?
-          header, payload, signature = @access_token.split('.')
-          decoded_payload = JSON.parse(Base64.decode64(payload))
-          access_token_expires_on = decoded_payload['exp']
-        end
-
-        @access_token_expires_on = Time.at(access_token_expires_on.to_i)
-        @access_token_fetched_at = Time.now
-
-        raise "Invalid expires_on value: #{@access_token_expires_on}" unless @access_token_expires_on > Time.now
+        refresh_token
       end
 
       @access_token
@@ -77,32 +63,21 @@ module ActiveRecordAAD
         endpoint: ENDPOINT,
         api_version: API_VERSION,
         resource: RESOURCE,
-        fetch_token: -300,
-        timeout: 10,
+        timeout: 5,
         enable_cleartext_plugin: true,
-        client_id: nil
+        client_id: nil,
+        http: true,
+        python: true
       }
     end
 
-    # Determines the expiration time of the access token based on the fetch_token property.
-    # - If fetch_token is 0, the token is fetched on every request, so the expiration time is the current time.
-    # - If fetch_token is greater than 0, the token is fetched every x seconds, so the expiration time is the current time plus x seconds.
-    # - If fetch_token is less than 0, the token is fetched x seconds before expiration, so the expiration time is the current expiration time minus x seconds.
+    # Determines the expiration time of the access token.
     def token_expiring?
-      return true if @access_token.blank?
+      return true if @fetched_at.nil?
 
-      fetch_at = case @properties[:fetch_token]
-      when 0
-        Time.now
-      when ->(n) { n > 0 }
-        @access_token_fetched_at + @properties[:fetch_token]
-      when ->(n) { n < 0 }
-        @access_token_expires_on + @properties[:fetch_token]
-      else
-        raise InvalidArgumentError
-      end
-
-      Time.now >= fetch_at
+      (@expires_in <= Time.now - @fetched_at ||
+      @expires_on >= Time.now) &&
+      @not_before < Time.now
     end
 
     def fetch_token_http
@@ -114,46 +89,62 @@ module ActiveRecordAAD
         'Metadata' => 'true'
       }, timeout: @properties[:timeout])
 
-      unless response.success?
-        logger('fetch_token_http').info('Unsuccessful response')
-        raise "ActiveRecordAAD: unsuccessful access token request: `#{response.code} - #{response.message} - #{response.body}`"
+      if response.success?
+        response = response.parsed_response
+      else
+        logger('fetch_token_http').info("Failed to fetch token or invalid token: : #{response.code} - #{response.message} - #{response.body}")
+        nil
       end
-
-      token = response.parsed_response
     end
 
     def fetch_token_python
+      response = nil
+
       begin
         response = JSON.parse `python3 #{File.expand_path('../bin/get_token_info.py', __dir__)} #{@properties[:client_id]}`.strip
       rescue StandardError => e
         logger('fetch_token_python').info("Failed to fetch token or invalid token")
       end
 
-      token, expires_on = response.values_at('token', 'expires_on')
+      response
     end
 
 
     # Fetches the access token from the specified URL.
-    def fetch_token
+        def refresh_token
       logger('fetch_token').info('Start')
-      token = nil
-      expires_on = nil
 
-      begin
-        token = fetch_token_http
-      rescue StandardError => http_error
-        logger('fetch_token').info("HTTP: error getting access token: `#{http_error.message}`")
+      response = nil
 
+      if @properties[:http]
         begin
-          token, expires_on = fetch_token_python
+          response = fetch_token_http
+        rescue StandardError => http_error
+          logger('fetch_token').info("HTTP: error getting access token: `#{http_error.message}`")
+        end
+      end
+
+      if response.nil? && @properties[:python]
+        begin
+          response = fetch_token_python
         rescue StandardError => python_error
           logger('fetch_token').info("Python: error getting access token: `#{python_error.message}`")
         end
       end
 
-      logger('fetch_token').info("Fetched token: `#{token[0..5]}...REDACTED...#{token[-5..-1]}`. Expires on: #{expires_on}")
+      if response.nil?
+        logger('fetch_token').info("Invalid Token: token nil")
+        raise 'Invalid Response: token nil'
+      end
 
-      return token, expires_on
+      @access_token, @expires_in, expires_on, not_before = response.values_at(:access_token, :expires_in, :expires_on, :not_before)
+      @expires_on = Time.at(expires_on)
+      @not_before = Time.at(not_before)
+      @fetched_at = Time.now
+
+      logger('fetch_token').info("Fetched token: `#{@access_token[0..5]}...REDACTED...#{@access_token}`. Expires on: #{@expires_on}")
+
+      true
     end
   end
 end
