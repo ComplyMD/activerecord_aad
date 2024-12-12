@@ -138,8 +138,10 @@ module ActiveRecordAAD
       end
 
       @access_token, @expires_in, expires_on, not_before = response.values_at('access_token', 'expires_in', 'expires_on', 'not_before')
-      @expires_on = Time.at(expires_on)
-      @not_before = Time.at(not_before)
+      Rails.logger.info "access_token: #{@access_token ? @access_token[0..10] : ''}, expires_in: #{@expires_in}, expires_on: #{expires_on}, not_before: #{not_before}"
+      @expires_in ||= 5.minutes
+      @expires_on = Time.at(expires_on) rescue Time.now
+      @not_before = Time.at(not_before) rescue Time.now
       @fetched_at = Time.now
 
       logger('fetch_token').info("Fetched token: `#{@access_token[0..5]}...REDACTED...#{@access_token}`. Expires on: #{@expires_on}")
