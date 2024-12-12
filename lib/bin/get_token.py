@@ -1,20 +1,14 @@
 import sys
+import json
 from azure.identity import ManagedIdentityCredential
 
-# Check if the correct number of arguments are provided
-if len(sys.argv) == 2:
-    # Get the client_id from the command-line arguments
-    client_id = sys.argv
+client_id = sys.argv[1] if len(sys.argv) == 2 else None
+credential = ManagedIdentityCredential(client_id=client_id)
+response = credential.get_token('https://management.azure.com/.default')
 
-    # Create a ManagedIdentityCredential instance
-    credential = ManagedIdentityCredential(client_id=client_id)
-
-    # Get an access token
-    token = credential.get_token('https://management.azure.com/.default')
-    print(token.token)
-else:
-    credential = ManagedIdentityCredential()
-
-    # Get an access token
-    token = credential.get_token('https://management.azure.com/.default')
-    print(token.token)
+token_info = {
+    'token': response.token,
+    'expires_on': response.expires_on
+}
+token_info_json = json.dumps(token_info)
+print(token_info_json)

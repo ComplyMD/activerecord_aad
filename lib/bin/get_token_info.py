@@ -4,7 +4,7 @@ from azure.identity import ManagedIdentityCredential
 
 client_id = sys.argv[1] if len(sys.argv) == 2 else None
 credential = ManagedIdentityCredential(client_id=client_id)
-response = credential.get_token('https://management.azure.com/.default')
+response = credential.get_token_info('https://management.azure.com/.default')
 
 token_info = {
     'token': response.token,
