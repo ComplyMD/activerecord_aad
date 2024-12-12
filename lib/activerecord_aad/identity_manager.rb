@@ -137,7 +137,7 @@ module ActiveRecordAAD
         raise 'Invalid Response: token nil'
       end
 
-      @access_token, @expires_in, expires_on, not_before = response.values_at(:access_token, :expires_in, :expires_on, :not_before)
+      @access_token, @expires_in, expires_on, not_before = response.values_at('access_token', 'expires_in', 'expires_on', 'not_before')
       @expires_on = Time.at(expires_on)
       @not_before = Time.at(not_before)
       @fetched_at = Time.now
