@@ -75,9 +75,7 @@ module ActiveRecordAAD
     def token_expiring?
       return true if @fetched_at.nil?
 
-      (@expires_in <= Time.now - @fetched_at ||
-      @expires_on >= Time.now) &&
-      @not_before < Time.now
+      @expires_on >= Time.now && @refresh_on >= Time.now
     end
 
     def fetch_token_http
@@ -138,10 +136,9 @@ module ActiveRecordAAD
       end
 
       begin
-        @access_token, @expires_in, expires_on, not_before = response.values_at('access_token', 'expires_in', 'expires_on', 'not_before')
-        Rails.logger.info "access_token: #{@access_token ? @access_token[0..10] : ''}, expires_in: #{@expires_in}, expires_on: #{expires_on}, not_before: #{not_before}"
+        @access_token, expires_on, refresh_on = response.values_at('access_token', 'expires_on', 'refresh_on')
         @expires_on = Time.at(expires_on)
-        @not_before = Time.at(not_before)
+        @refresh_on = Time.at(refresh_on)
         @fetched_at = Time.now
       rescue StandardError => e
         logger('fetch_token').info("Invalid Token: #{e.message}")
