@@ -8,7 +8,9 @@ response = credential.get_token('https://management.azure.com/.default')
 
 token_info = {
     'token': response.token,
-    'expires_on': response.expires_on
+    'expires_in': response.expires_in,
+    'expires_on': response.expires_on,
+    'not_before': response.not_before,
 }
 token_info_json = json.dumps(token_info)
 print(token_info_json)

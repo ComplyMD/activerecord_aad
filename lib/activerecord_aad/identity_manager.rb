@@ -144,7 +144,7 @@ module ActiveRecordAAD
       @not_before = Time.at(not_before) rescue Time.now
       @fetched_at = Time.now
 
-      logger('fetch_token').info("Fetched token: `#{@access_token[0..5]}...REDACTED...#{@access_token}`. Expires on: #{@expires_on}")
+      logger('fetch_token').info("Fetched token: `#{@access_token[0..5]}...REDACTED...#{@access_token[-5..-1]}`. Expires on: #{@expires_on}")
 
       true
     end
