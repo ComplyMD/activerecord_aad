@@ -136,7 +136,7 @@ module ActiveRecordAAD
       end
 
       begin
-        @access_token, expires_on, refresh_on = response.values_at('access_token', 'expires_on', 'refresh_on')
+        @access_token, expires_on, refresh_on = response.values_at('token', 'expires_on', 'refresh_on')
         @expires_on = Time.at(expires_on)
         @refresh_on = Time.at(refresh_on)
         @fetched_at = Time.now
