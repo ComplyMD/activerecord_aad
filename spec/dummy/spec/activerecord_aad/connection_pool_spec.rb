@@ -4,9 +4,10 @@ require 'timecop'
 
 RSpec.describe ActiveRecordAAD::ActiveRecord::ConnectionAdapters::ConnectionPool do
 
+  let(:response_double) { double('response', success?: true, code: 200, message: 'OK', parsed_response: dummy_token_response(expires_in: 5.minutes))}
+
   before do
-    response_double = double('response', success?: true, code: 200, message: 'OK', parsed_response: dummy_token_response(expires_in: 5.minutes))
-    allow(HTTParty).to receive(:get).and_return(response_double, response_double, response_double)
+    allow(HTTParty).to receive(:get).and_return(response_double)
   end
 
   describe '#checkout_new_connection' do
@@ -22,9 +23,11 @@ RSpec.describe ActiveRecordAAD::ActiveRecord::ConnectionAdapters::ConnectionPool
 
       it 'fetches a new token once' do
         run_with_connection do |connection_pool|
+          allow(connection_pool.identity_manager).to receive(:fetch_token_http).and_return(dummy_token_response(expires_in: 10.minutes))
           expect(connection_pool.identity_manager).to receive(:refresh_token).once.and_call_original
 
-          Timecop.travel(10.minutes.from_now) do
+          connection_pool.identity_manager.access_token
+          Timecop.travel(5.minutes.from_now) do
             connection_pool.identity_manager.access_token
             connection_pool.identity_manager.access_token
           end

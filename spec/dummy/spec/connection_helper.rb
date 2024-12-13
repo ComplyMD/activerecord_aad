@@ -22,17 +22,17 @@ def dummy_token(header: {}, payload: {}, signature: 'signature')
   "#{Base64.urlsafe_encode64(header.to_json)}.#{Base64.urlsafe_encode64(payload.to_json)}.#{Base64.urlsafe_encode64(signature)}"
 end
 
-def dummy_token_response(expires_in: nil, expires_on: nil, not_before: nil, token: {})
+def dummy_token_response(expires_in: nil, expires_on: nil, refresh_on: nil, token: {})
   token = token.merge({ header: {}, payload: {}, signature: 'signature' })
   expires_in = (expires_in || 60.minutes).to_i
   expires_on = (expires_on || (Time.now + expires_in)).to_i
-  not_before = (not_before || (Time.now + expires_in)).to_i
+  refresh_on = (refresh_on || (Time.now + expires_in)).to_i
 
   access_token = dummy_token(**token)
+
   {
-    access_token: access_token,
-    expires_in: expires_in,
-    expires_on: expires_on,
-    not_before: not_before
+    'token' => access_token,
+    'expires_on' => expires_on,
+    'refresh_on' => refresh_on
   }
 end

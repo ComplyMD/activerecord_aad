@@ -75,7 +75,7 @@ module ActiveRecordAAD
     def token_expiring?
       return true if @fetched_at.nil?
 
-      @expires_on >= Time.now && @refresh_on >= Time.now
+      (@expires_on <= Time.now) || (@refresh_on <= Time.now)
     end
 
     def fetch_token_http
@@ -109,8 +109,8 @@ module ActiveRecordAAD
 
 
     # Fetches the access token from the specified URL.
-        def refresh_token
-      logger('fetch_token').info('Start')
+    def refresh_token
+      logger('refresh_token').info('Start')
 
       response = nil
 
@@ -118,7 +118,7 @@ module ActiveRecordAAD
         begin
           response = fetch_token_http
         rescue StandardError => http_error
-          logger('fetch_token').info("HTTP: error getting access token: `#{http_error.message}`")
+          logger('refresh_token').info("HTTP: error getting access token: `#{http_error.message}`")
         end
       end
 
@@ -126,12 +126,12 @@ module ActiveRecordAAD
         begin
           response = fetch_token_python
         rescue StandardError => python_error
-          logger('fetch_token').info("Python: error getting access token: `#{python_error.message}`")
+          logger('refresh_token').info("Python: error getting access token: `#{python_error.message}`")
         end
       end
 
       if response.nil?
-        logger('fetch_token').info("Invalid Token: token nil")
+        logger('refresh_token').info("Invalid Token: token nil")
         raise 'Invalid Response: token nil'
       end
 
@@ -141,11 +141,11 @@ module ActiveRecordAAD
         @refresh_on = Time.at(refresh_on)
         @fetched_at = Time.now
       rescue StandardError => e
-        logger('fetch_token').info("Invalid Token: #{e.message}")
+        logger('refresh_token').info("Invalid Token: #{e.message}")
         return false
       end
 
-      logger('fetch_token').info("Fetched token: `#{@access_token[0..5]}...REDACTED...#{@access_token[-5..-1]}`. Expires on: #{@expires_on}")
+      logger('refresh_token').info("Fetched token: `#{@access_token[0..5]}...REDACTED...#{@access_token[-5..-1]}`. Expires on: #{@expires_on}")
 
       true
     end
