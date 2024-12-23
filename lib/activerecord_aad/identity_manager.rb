@@ -91,8 +91,10 @@ module ActiveRecordAAD
         response = response.parsed_response
       else
         logger('fetch_token_http').info("Failed to fetch token or invalid token: : #{response.code} - #{response.message} - #{response.body}")
-        nil
+        response = nil
       end
+
+      response
     end
 
     def fetch_token_python

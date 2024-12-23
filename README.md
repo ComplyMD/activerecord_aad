@@ -24,12 +24,9 @@ production:
   adapter: mysql2
   reconnect: true
   host: my-app.mysql.database.azure.com
-  #provide just the client id and use default properties
-  azure_managed_identity: 00000000-0000-0000-000000000000
-  #or, provide client id and specify other properties
+  #provide client id and specify other properties
   azure_managed_identity:
     client_id: 00000000-0000-0000-000000000000
-    fetch_token: 0
   database: app
   username: MyAppsManagedIdentity@my-app
   sslca: /opt/ssl/BaltimoreCyberTrustRoot.crt.pem
@@ -41,6 +38,9 @@ production:
 
 The password field in the database configuration is replaced with an access token from Azure which is passed to the adapter to establish the connection. Whenever the token needs to be replaced, a call is made to the Azure endpoint and the token is updated.
 
+### Dependencies
+If using the python option to fetch tokens, then python, pip and the azure.identity module need to be installed. HTTP requests will work in VMs, python is better for containers.
+
 
 ### Default Properties
 
@@ -49,7 +49,7 @@ The default properties for `ActiveRecordAAD` include:
 - `api_version`: The API version to use when fetching the token.
 - `resource`: The resource for which the token is requested.
 - `timeout`: The timeout for the request to fetch the token.
-- `fetch_token`: Determines when to fetch the token. It can be:
-  - `0`: Fetch token on every request.
-  - `> 0`: Fetch token every x seconds.
-  - `< 0`: Fetch token x seconds before expiration.
+- `enable_cleartext_plugin`: Whether to enable the cleartext plugin for MySQL databases.
+- `client_id`: The client ID for the Azure Managed Identity.
+- `http`: Whether to use HTTP to fetch the token.
+- `python`: Whether to use Python to fetch the token.
