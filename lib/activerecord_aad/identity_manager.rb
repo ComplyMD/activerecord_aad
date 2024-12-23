@@ -63,6 +63,7 @@ module ActiveRecordAAD
         endpoint: ENDPOINT,
         api_version: API_VERSION,
         resource: RESOURCE,
+        scope: "#{RESOURCE}/.default", # "https://ossrdbms-aad.database.windows.net/.default",
         timeout: 5,
         enable_cleartext_plugin: true,
         client_id: nil,
@@ -101,7 +102,7 @@ module ActiveRecordAAD
       response = nil
 
       begin
-        response = JSON.parse `python3 #{File.expand_path('../bin/get_token_info.py', __dir__)} #{@properties[:client_id]}`.strip
+        response = JSON.parse `python3 #{File.expand_path('../bin/get_token_info.py', __dir__)} #{@properties[:client_id]} #{@properties[:scope]}`.strip
       rescue StandardError => e
         logger('fetch_token_python').info("Failed to fetch token or invalid token")
       end
