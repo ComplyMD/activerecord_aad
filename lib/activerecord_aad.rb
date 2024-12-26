@@ -9,7 +9,7 @@ module ActiveRecordAAD
     class Railtie < ::Rails::Railtie
       railtie_name :activerecord_aad
 
-      initializer 'activerecord_aad.config' do
+      initializer 'activerecord_aad.config', before: :load_config_initializers do
         ::ActiveRecord::ConnectionAdapters::ConnectionPool.prepend ActiveRecordAAD::ActiveRecord::ConnectionAdapters::ConnectionPool
       end
     end
