@@ -8,10 +8,6 @@ module ActiveRecordAAD
       module ConnectionPool
         attr_reader :identity_manager
 
-        def initialize_identity_manager
-          checkout_new_connection
-        end
-
         # Checks out a new connection from the connection pool.
         # If the database configuration includes the :azure_managed_identity key,
         # it initializes a IdentityManager with the configuration and applies it to the db_config.

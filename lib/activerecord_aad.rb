@@ -14,4 +14,8 @@ module ActiveRecordAAD
       end
     end
   end
+
+  def self.initialize!
+    ::ActiveRecord::Base.connection_pool.checkout_new_connection
+  end
 end
