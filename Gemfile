@@ -9,6 +9,8 @@ end
 
 gemspec
 
+gem 'httparty'
+
 group :test do
   gem 'faker'
   gem 'rspec'
@@ -16,6 +18,8 @@ group :test do
   gem 'rubocop'
   gem 'rubocop-rspec', require: false
   gem 'simplecov', require: false
+  gem 'timecop'
+  gem 'rails', '~> 7.1.0'
 end
 
 group :development do
